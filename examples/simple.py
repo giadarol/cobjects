@@ -10,3 +10,6 @@ obj[0]=31
 
 b.reallocate(100,100,100,100)
 b.info()
+
+b._test_cffilib()
+

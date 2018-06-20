@@ -41,6 +41,9 @@ garbage list:
 
 import numpy as np
 
+from ._cbuffer import ffi, lib
+
+
 
 class fieldi64(object):
     __slots__ = ['offset', 'pref']
@@ -134,6 +137,7 @@ class CBuffer(object):
         self.size_pointers = size_pointers
         self.p_garbage = self.p_pointers+size_pointers
         self.size_garbage = size_garbage
+        self._cffi_pointer = ffi.cast('void *',self._data.ctypes.data)
 
     def free_slots(self):
         return self.size_slots//8-2-self.n_slots
@@ -208,7 +212,7 @@ class CBuffer(object):
         pass
 
     def to_cffi(self):
-        pass
+        return ffi.cast('void *',self._data.ctypes.data)
 
     def info(self):
         out = []
@@ -226,3 +230,7 @@ class CBuffer(object):
 
     def __repr__(self):
         return f"<CBuffer at {self.base}, {self.size} bytes>"
+
+    def _test_cffilib(self):
+        return lib.print_info(self._cffi_pointer)
+
