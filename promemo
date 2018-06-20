@@ -1,0 +1,15 @@
+
+build .so
+
+```
+python3 _cffi_build/cbuffer_builder.py
+```
+
+install editable package
+
+```
+pip3 install --no-deps -e . --user
+```
+
+
+
