@@ -21,18 +21,18 @@ class CField(object):
             size*=length
         return size
     def _field_getter(self,obj):
-        index=obj._offsets[self.index]
+        offset=obj._offsets[self.index]
         ftype=obj._ftypes[self.index]
         fsize=obj._fsizes[self.index]
         if self.length is None:
-            return obj._buffer._data[index:index+fsize].view(ftype)[0]
+            return obj._buffer._data[offset:offset+fsize].view(ftype)[0]
         else:
-            return obj._buffer._data[index:index+fsize].view(ftype)
+            return obj._buffer._data[offset:offset+fsize].view(ftype)
     def _field_setter(self,obj,value):
-        index=obj._offsets[self.index]
+        offset=obj._offsets[self.index]
         ftype=obj._ftypes[self.index]
         fsize=obj._fsizes[self.index]
-        data=obj._buffer._data[index:index+fsize].view(ftype)
+        data=obj._buffer._data[offset:offset+fsize].view(ftype)
         if self.length is None:
            data[0]=value
         else:

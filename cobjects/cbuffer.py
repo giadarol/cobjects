@@ -199,7 +199,7 @@ class CBuffer(object):
     def address_to_offset(self,address):
         return address - self.base
 
-    def new_object(self, size, otype, pointer_offsets=[]):
+    def new_object(self, size, otype, pointer_list=[]):
         typeid=otype._typeid
         if typeid in self.typeids:
             if self.typeids[typeid]!=otype:
@@ -222,16 +222,16 @@ class CBuffer(object):
         if self.free_objects() < 1:
             max_objects = (n_objects+1)*2
             realloc = True
-        if self.free_pointers() < len(pointer_offsets):
-            max_pointers = (n_pointers+len(pointer_offsets))*2
+        if self.free_pointers() < len(pointer_list):
+            max_pointers = (n_pointers+len(pointer_list))*2
             realloc = True
         if realloc:
             self.reallocate(max_slots, max_objects, max_pointers, max_garbage)
         p_object = self.p_slots+(2+self.n_slots)*8
         self.n_slots += slots_needed
-        for p_offset in pointer_offsets:
+        for p_address in pointer_list:
+            self.pointers[2+self.n_pointers] = p_address + p_object
             self.n_pointers += 1
-            self.pointers[2+self.n_pointers] = p_object+p_offset
         idx_object = 2+self.n_objects*3
         self.objects[idx_object+0] = p_object
         self.objects[idx_object+1] = typeid
@@ -261,9 +261,14 @@ class CBuffer(object):
             if isinstance(vv, fieldi64):
                 out.append(f"{kk:14} : {getattr(self,kk)}")
             if isinstance(vv, viewi64):
-                beg = fmt(getattr(self, kk)[:10])
-                end = fmt(getattr(self, kk)[-3:])
-                out.append(f"{kk:14} : {beg} ... {end}")
+                vvv=getattr(self, kk)
+                if len(vvv)>13:
+                   beg = fmt(vvv[:10])
+                   end = fmt(vvv[-3:])
+                   out.append(f"{kk:14} : {beg} ... {end}")
+                else:
+                   beg = fmt(vvv)
+                   out.append(f"{kk:14} : {beg}")
         print("\n".join(out))
 
     def __repr__(self):
