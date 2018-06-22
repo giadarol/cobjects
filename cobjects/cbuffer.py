@@ -86,6 +86,10 @@ class viewi64(object):
             indexb = indexa + int(getattr(obj, self.length))
             return obj._data[indexa:indexb].view('int64')
 
+python_types={'integer':'object',
+              'real':'object'}
+c_types={'integer':'int64',
+         'real':'float64'}
 
 class CBuffer(object):
     HEADER = 64
@@ -109,13 +113,33 @@ class CBuffer(object):
     pointers = viewi64('p_pointers', 'size_pointers')
     garbage = viewi64('p_garbage', 'size_garbage')
 
+
     def __init__(self,
-                 max_slots=10, max_objects=10,
-                 max_pointers=10, max_garbage=10,
-                 real='object', integer='object'):
-        self.real = real
-        self.integer = integer
+                 max_slots=1, max_objects=1,
+                 max_pointers=0, max_garbage=0,
+                 template=python_types):
+        self.typeids={}
+        self.template = template
         self.allocate(max_slots, max_objects, max_pointers, max_garbage)
+
+    def resolve_type(self,ftype):
+        return np.dtype(self.template.get(ftype,ftype))
+
+    @property
+    def max_slots(self):
+        return self.size_slots//8-2
+
+    @property
+    def max_objects(self):
+        return (self.size_objects//8-2)//3
+
+    @property
+    def max_pointers(self):
+        return self.size_pointers//8-2
+
+    @property
+    def max_garbage(self):
+        return (self.size_garbage//8-2)//2
 
     def allocate(self, max_slots, max_objects, max_pointers, max_garbage):
         size_header = CBuffer.HEADER
@@ -171,8 +195,24 @@ class CBuffer(object):
         self.garbage[1:len(old_garbage)] = old_garbage[1:]
         self.garbage[2:2*old_n_garbage:2] += gap
 
-    def new_object(self, size, obj_type, pointer_offsets=[]):
+    def next_object_address(self):
+        return self.p_slots+(2+self.n_slots)*8
+
+    def address_to_offset(self,address):
+        return address - self.base
+
+    def new_object(self, size, otype, pointer_offsets=[]):
+        typeid=otype._typeid
+        if typeid in self.typeids:
+            if self.typeids[typeid]!=otype:
+                raise ValueError("Two types with same id")
+        else:
+            self.typeids[typeid]=otype
         realloc = False
+        max_slots = self.max_slots
+        max_objects = self.max_objects
+        max_pointers = self.max_pointers
+        max_garbage = self.max_garbage
         n_slots = self.n_slots
         n_objects = self.n_objects
         n_pointers = self.n_pointers
@@ -196,7 +236,7 @@ class CBuffer(object):
             self.pointers[2+self.n_pointers] = p_object+p_offset
         idx_object = 2+self.n_objects*3
         self.objects[idx_object+0] = p_object
-        self.objects[idx_object+1] = obj_type
+        self.objects[idx_object+1] = typeid
         self.objects[idx_object+2] = size
         self.n_objects+=1
         return p_object
@@ -234,3 +274,12 @@ class CBuffer(object):
     def _test_cffilib(self):
         return lib.print_info(self._cffi_pointer)
 
+    def to_file(self,filename):
+        pass
+
+    @classmethod
+    def from_file(cls,filename):
+        pass
+
+CBuffer.python_types=python_types
+CBuffer.c_types=c_types
