@@ -9,7 +9,7 @@ class CObject(object):
                 yield nn,vv
     def __init__(self,_buffer=None,**nargs):
         if _buffer is None:
-            _buffer=CBuffer(template=CBuffer.python_types)
+            _buffer=CBuffer(template=CBuffer.c_types)
         self._buffer=_buffer
         self._address=self._buffer.next_object_address()
         self._offset=self._buffer.address_to_offset(self._address)

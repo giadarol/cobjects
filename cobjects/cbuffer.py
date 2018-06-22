@@ -86,8 +86,6 @@ class viewi64(object):
             indexb = indexa + int(getattr(obj, self.length))
             return obj._data[indexa:indexb].view('int64')
 
-python_types={'integer':'object',
-              'real':'object'}
 c_types={'integer':'int64',
          'real':'float64'}
 
@@ -117,7 +115,7 @@ class CBuffer(object):
     def __init__(self,
                  max_slots=1, max_objects=1,
                  max_pointers=0, max_garbage=0,
-                 template=python_types):
+                 template=c_types):
         self.typeids={}
         self.template = template
         self.allocate(max_slots, max_objects, max_pointers, max_garbage)
@@ -281,5 +279,4 @@ class CBuffer(object):
     def from_file(cls,filename):
         pass
 
-CBuffer.python_types=python_types
 CBuffer.c_types=c_types

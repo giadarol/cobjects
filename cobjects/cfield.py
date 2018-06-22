@@ -4,6 +4,7 @@ class CField(object):
              length=None, pointer=False,
              alignment=None,
              setter=None):
+        self.index = index
         self.ftype = ftype
         self.default =  default
         self.setter=setter
@@ -20,18 +21,17 @@ class CField(object):
             size*=length
         return size
     def _field_getter(self,obj):
-        print(index)
         index=obj._offsets[self.index]
-        ftype=obj._ftypes[self.ftype]
-        fsize=obj._fsizes[self.ftype]
-        if length is None:
+        ftype=obj._ftypes[self.index]
+        fsize=obj._fsizes[self.index]
+        if self.length is None:
             return obj._buffer._data[index:index+fsize].view(ftype)[0]
         else:
             return obj._buffer._data[index:index+fsize].view(ftype)
     def _field_setter(self,obj,value):
         index=obj._offsets[self.index]
-        ftype=obj._ftypes[self.ftype]
-        fsize=obj._fsizes[self.ftype]
+        ftype=obj._ftypes[self.index]
+        fsize=obj._fsizes[self.index]
         data=obj._buffer._data[index:index+fsize].view(ftype)
         if self.length is None:
            data[0]=value
@@ -43,6 +43,7 @@ class CField(object):
         if obj is None:
             return self
         else:
-            return self._fieldgetter(obj)
-
+            return self._field_getter(obj)
+    def __set__(self,obj,value):
+        return self._field_setter(obj,value)
 
