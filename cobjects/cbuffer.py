@@ -254,7 +254,7 @@ class CBuffer(object):
     def get_field(self, offset, ftype, fsize, length=None):
         if length is None:
             if hasattr(ftype, '_typeid'):
-                return ftype(cbuffer=self, _offset=offset, _size=size)
+                return ftype(cbuffer=self, _offset=offset)
             else:
                 return self._data[offset:offset+fsize].view(ftype)[0]
         else:

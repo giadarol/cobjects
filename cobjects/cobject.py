@@ -10,22 +10,25 @@ class CObject(object):
                 yield nn, vv
 
     @classmethod
-    def get_itemsize(cls, nargs):
-        for name, field in self._fields():
-            ftype = self._buffer.resolve_type(field.ftype)
-            length = field.get_length(nargs)
-            self._flength.append(length)
+    def get_itemsize(cls, offset, nargs):
+        return cls(offset,**nargs)._size
 
     def _fields(self):
         return self.__class__.get_fields()
 
-    def __init__(self, cbuffer=None, _offset=None, _size=None, **nargs):
+    def __init__(self, cbuffer=None, _offset=None, copy_args=False,
+                       **nargs):
         if cbuffer is None:
             cbuffer = CBuffer(template=CBuffer.c_types)
         self._buffer = cbuffer
-        self._build_from_args(nargs, _offset, _size)
+        if _offset is None:
+            new_object = True
+            copy_args  = True
+        else:
+            new_object = False
+        self._setup_from_args(nargs, _offset, new_object, copy_args)
 
-    def _build_from_args(self, nargs, offset=None, size=None):
+    def _setup_from_args(self, nargs, offset, new_object, copy_args):
         self._offsets = []
         self._ftypes = []
         self._fsizes = []
@@ -33,14 +36,11 @@ class CObject(object):
         self._flength = []
         self._fconst = []
         curr_size = 0
-        new_object = True
-        if offset is not None:
-            curr_offset = offset
-            new_object = False
-            self._offset = offset
-            self._size = size
-        else:
+        if new_object is True:
             curr_offset = 0
+        else:
+            curr_offset = offset
+            self._offset = offset
         curr_pointers = 0
         pointer_list = []
         # first pass for normal fields
@@ -95,6 +95,7 @@ class CObject(object):
             self._size = curr_size
             for index in range(len(self._offsets)):
                 self._offsets[index] += self._offset
+        if copy_args is True:
             # store pointer data
             for offset, address in pointer_data:
                 doffset = offset+self._offset
