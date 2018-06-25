@@ -95,14 +95,14 @@ class CBuffer(object):
     base = fieldi64(0)
     size = fieldi64(1*8)
     size_header = fieldi64(2*8)
-    p_slots = fieldi64(3*8)
-    p_objects = fieldi64(4*8)
-    p_pointers = fieldi64(5*8)
-    p_garbage = fieldi64(6*8)
     size_slots = fieldi64(0, 'p_slots')
     size_objects = fieldi64(0, 'p_objects')
     size_pointers = fieldi64(0, 'p_pointers')
     size_garbage = fieldi64(0, 'p_garbage')
+    p_slots = fieldi64(3*8)
+    p_objects = fieldi64(4*8)
+    p_pointers = fieldi64(5*8)
+    p_garbage = fieldi64(6*8)
     n_slots = fieldi64(1*8, 'p_slots')
     n_objects = fieldi64(1*8, 'p_objects')
     n_pointers = fieldi64(1*8, 'p_pointers')
@@ -115,10 +115,14 @@ class CBuffer(object):
     def __init__(self,
                  max_slots=1, max_objects=1,
                  max_pointers=0, max_garbage=0,
-                 template=c_types):
+                 template=c_types,
+                 data=None):
         self.typeids = {}
         self.template = template
-        self.allocate(max_slots, max_objects, max_pointers, max_garbage)
+        if data is None:
+           self.allocate(max_slots, max_objects, max_pointers, max_garbage)
+        else:
+           self._data=data
 
     def resolve_type(self, ftype):
         return np.dtype(self.template.get(ftype, ftype))
@@ -305,11 +309,30 @@ class CBuffer(object):
         return lib.print_info(self._cffi_pointer)
 
     def to_file(self, filename):
-        pass
+        self._data.tofile(filename)
 
     @classmethod
     def from_file(cls, filename):
-        pass
-
+        data=np.fromfile(filename,dtype='uint8')
+        self=cls(data=data)
+        old_data = self._data
+        old_slots = self.slots
+        old_objects = self.objects
+        old_n_slots = self.n_slots
+        old_n_objects = self.n_objects
+        old_n_pointers = self.n_pointers
+        old_n_garbage = self.n_garbage
+        old_pointers = self.pointers
+        old_garbage = self.garbage
+        self_data[0]=self._data.ctypes.data
+        gap = self_data[0]-old_data[0]
+        self.slots[1:len(old_slots)] = old_slots[1:]
+        self.objects[1:len(old_objects)] = old_objects[1:]
+        p_array = self.objects[2:2+3*old_n_objects:3]
+        self.objects[2:2+3*old_n_objects:3] += gap
+        self.pointers[1:len(old_pointers)] = old_pointers[1:]
+        self.garbage[1:len(old_garbage)] = old_garbage[1:]
+        self.garbage[2:2*old_n_garbage:2] += gap
+        return self
 
 CBuffer.c_types = c_types

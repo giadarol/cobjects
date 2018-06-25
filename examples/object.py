@@ -5,7 +5,7 @@ class MyObj(CObject):
     a=CField(0,'integer',default=3)
     b=CField(1,'real',default=3.0)
     c=CField(2,'real',length=4,default=1.1)
-    d=CField(3,'real',length=4,default=1.2,pointer=True)
+    d=CField(3,'int8',length=4,default=1.2,pointer=True)
     e=CField(4,'real',length=2,default=1.3,pointer=True)
 
 
