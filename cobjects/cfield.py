@@ -1,6 +1,6 @@
 class CField(object):
     def __init__(self, index,
-             ftype,default=None, const=None,
+             ftype,default=None, const=False,
              length=None, pointer=False,
              alignment=None,
              setter=None):
@@ -12,33 +12,37 @@ class CField(object):
         self.const=const
         self.pointer=pointer
         self.alignment=alignment
-    def get_size(self,ftype,nargs):
-        size=ftype.itemsize
+    def get_length(self,nargs):
         if self.length is not None:
             length=self.length
             if isinstance(length,str):
                length=eval(length,{},nargs)
+            return length
+    def get_size(self,ftype,offset,nargs):
+        if hasattr(ftype,'get_itemsize'):
+            size=ftype.get_itemsize(offset,nargs)
+        else:
+            size=ftype.itemsize
+        length=self.get_length(nargs)
+        if self.length is not None:
             size*=length
         return size
     def _field_getter(self,obj):
         offset=obj._offsets[self.index]
         ftype=obj._ftypes[self.index]
         fsize=obj._fsizes[self.index]
-        if self.length is None:
-            return obj._buffer._data[offset:offset+fsize].view(ftype)[0]
-        else:
-            return obj._buffer._data[offset:offset+fsize].view(ftype)
+        length=obj._flength[self.index]
+        return obj._buffer.get_field(offset,ftype,fsize,length)
     def _field_setter(self,obj,value):
-        offset=obj._offsets[self.index]
-        ftype=obj._ftypes[self.index]
-        fsize=obj._fsizes[self.index]
-        data=obj._buffer._data[offset:offset+fsize].view(ftype)
-        if self.length is None:
-           data[0]=value
-        else:
-            data[:]=value
-        if self.setter is not None:
-            self.setter(obj,value)
+        const = obj._fconst[self.index]
+        if const is False:
+             offset=obj._offsets[self.index]
+             ftype=obj._ftypes[self.index]
+             fsize=obj._fsizes[self.index]
+             length=obj._flength[self.index]
+             obj._buffer.set_field(value,offset,ftype,fsize,length)
+             if self.setter is not None:
+                 self.setter(obj,value)
     def __get__(self,obj,cls=None):
         if obj is None:
             return self

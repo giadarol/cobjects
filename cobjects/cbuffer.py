@@ -44,7 +44,6 @@ import numpy as np
 from ._cbuffer import ffi, lib
 
 
-
 class fieldi64(object):
     __slots__ = ['offset', 'pref']
 
@@ -86,8 +85,10 @@ class viewi64(object):
             indexb = indexa + int(getattr(obj, self.length))
             return obj._data[indexa:indexb].view('int64')
 
-c_types={'integer':'int64',
-         'real':'float64'}
+
+c_types = {'integer': 'int64',
+           'real': 'float64'}
+
 
 class CBuffer(object):
     HEADER = 64
@@ -111,17 +112,16 @@ class CBuffer(object):
     pointers = viewi64('p_pointers', 'size_pointers')
     garbage = viewi64('p_garbage', 'size_garbage')
 
-
     def __init__(self,
                  max_slots=1, max_objects=1,
                  max_pointers=0, max_garbage=0,
                  template=c_types):
-        self.typeids={}
+        self.typeids = {}
         self.template = template
         self.allocate(max_slots, max_objects, max_pointers, max_garbage)
 
-    def resolve_type(self,ftype):
-        return np.dtype(self.template.get(ftype,ftype))
+    def resolve_type(self, ftype):
+        return np.dtype(self.template.get(ftype, ftype))
 
     @property
     def max_slots(self):
@@ -159,7 +159,7 @@ class CBuffer(object):
         self.size_pointers = size_pointers
         self.p_garbage = self.p_pointers+size_pointers
         self.size_garbage = size_garbage
-        self._cffi_pointer = ffi.cast('void *',self._data.ctypes.data)
+        self._cffi_pointer = ffi.cast('void *', self._data.ctypes.data)
 
     def free_slots(self):
         return self.size_slots//8-2-self.n_slots
@@ -187,7 +187,7 @@ class CBuffer(object):
         gap = int(self._data[0])-int(old_data[0])
         self.slots[1:len(old_slots)] = old_slots[1:]
         self.objects[1:len(old_objects)] = old_objects[1:]
-        p_array=self.objects[2:2+3*old_n_objects:3]
+        p_array = self.objects[2:2+3*old_n_objects:3]
         self.objects[2:2+3*old_n_objects:3] += gap
         self.pointers[1:len(old_pointers)] = old_pointers[1:]
         self.garbage[1:len(old_garbage)] = old_garbage[1:]
@@ -196,16 +196,16 @@ class CBuffer(object):
     def next_object_address(self):
         return self.p_slots+(2+self.n_slots)*8
 
-    def address_to_offset(self,address):
+    def address_to_offset(self, address):
         return address - self.base
 
     def new_object(self, size, otype, pointer_list=[]):
-        typeid=otype._typeid
+        typeid = otype._typeid
         if typeid in self.typeids:
-            if self.typeids[typeid]!=otype:
+            if self.typeids[typeid] != otype:
                 raise ValueError("Two types with same id")
         else:
-            self.typeids[typeid]=otype
+            self.typeids[typeid] = otype
         realloc = False
         max_slots = self.max_slots
         max_objects = self.max_objects
@@ -215,7 +215,7 @@ class CBuffer(object):
         n_objects = self.n_objects
         n_pointers = self.n_pointers
         n_garbage = self.n_garbage
-        slots_needed = size//8+size%8
+        slots_needed = size//8+size % 8
         if self.free_slots() < slots_needed:
             max_slots = (n_slots+slots_needed)*2
             realloc = True
@@ -236,7 +236,7 @@ class CBuffer(object):
         self.objects[idx_object+0] = p_object
         self.objects[idx_object+1] = typeid
         self.objects[idx_object+2] = size
-        self.n_objects+=1
+        self.n_objects += 1
         return p_object
 
     def get_object_buffer(self, objid):
@@ -246,11 +246,38 @@ class CBuffer(object):
         idx = p_object-self.base
         return self._data[idx:idx+size]
 
+    def get_object_size(self, objid):
+        idx = 2+objid*3
+        size = int(self.objects[idx+2])
+        return self._data[idx:idx+size]
+
+    def get_field(self, offset, ftype, fsize, length=None):
+        if length is None:
+            if hasattr(ftype, '_typeid'):
+                return ftype(cbuffer=self, _offset=offset, _size=size)
+            else:
+                return self._data[offset:offset+fsize].view(ftype)[0]
+        else:
+            if hasattr(ftype, '_typeid'):
+                return [ftype(cbuffer=self,
+                              _offset=offset+ii*size,
+                              _size=size)
+                        for ii in range(len(ii))]
+            else:
+                return self._data[offset:offset+fsize].view(ftype)
+
+    def set_field(self, value, offset, ftype, fsize, length=None):
+        data = self._data[offset:offset+fsize].view(ftype)
+        if length is None:
+            data[0] = value
+        else:
+            data[:] = value
+
     def to_ctypes(self):
         pass
 
     def to_cffi(self):
-        return ffi.cast('void *',self._data.ctypes.data)
+        return ffi.cast('void *', self._data.ctypes.data)
 
     def info(self):
         out = []
@@ -261,14 +288,14 @@ class CBuffer(object):
             if isinstance(vv, fieldi64):
                 out.append(f"{kk:14} : {getattr(self,kk)}")
             if isinstance(vv, viewi64):
-                vvv=getattr(self, kk)
-                if len(vvv)>13:
-                   beg = fmt(vvv[:10])
-                   end = fmt(vvv[-3:])
-                   out.append(f"{kk:14} : {beg} ... {end}")
+                vvv = getattr(self, kk)
+                if len(vvv) > 13:
+                    beg = fmt(vvv[:10])
+                    end = fmt(vvv[-3:])
+                    out.append(f"{kk:14} : {beg} ... {end}")
                 else:
-                   beg = fmt(vvv)
-                   out.append(f"{kk:14} : {beg}")
+                    beg = fmt(vvv)
+                    out.append(f"{kk:14} : {beg}")
         print("\n".join(out))
 
     def __repr__(self):
@@ -277,11 +304,12 @@ class CBuffer(object):
     def _test_cffilib(self):
         return lib.print_info(self._cffi_pointer)
 
-    def to_file(self,filename):
+    def to_file(self, filename):
         pass
 
     @classmethod
-    def from_file(cls,filename):
+    def from_file(cls, filename):
         pass
 
-CBuffer.c_types=c_types
+
+CBuffer.c_types = c_types
