@@ -1,8 +1,64 @@
 from .cbuffer import CBuffer
 from .cfield import CField
 
+_ctypes={'int64': 'long',
+         'int32': 'int',
+         'uint8': 'unsigned char',
+         'float64': 'double'}
+
+_cprintf={'int64': '%ld',
+         'int32': '%d',
+         'uint8': '%d',
+         'float64': '%g'}
 
 class CObject(object):
+    def _to_cdecl(self,restrict=True):
+        out=["typedef struct {"]
+        for  name, field in self._fields():
+            ftype=str(self._ftypes[field.index])
+            ftype=_ctypes.get(ftype,ftype)
+            length=self._flength[field.index]
+            if field.pointer:
+                if restrict:
+                   name=' restrict ' + name
+                name='*'+name
+            elif length is not None:
+                name=f"{name}[{length}]"
+            if field.alignment is not None:
+                name=f"     {name} __attribute__ ((aligned ({field.alignment})))"
+            out.append(f'{str(ftype):10} {name} ;')
+        out.append("} %s;"%self.__class__.__name__ )
+        return '\n'.join(out)
+
+    def _to_cdebug(self,restrict=True):
+        out=[self._to_cdecl(restrict=restrict)]
+        cls=self.__class__.__name__
+        out.append("#include <stdio.h>")
+        out.append("void %s_print(%s *obj){"%(cls,cls))
+        out.append(f'printf("{cls} at %zu \\n",(size_t) obj );')
+        for  name, field in self._fields():
+            ftype=str(self._ftypes[field.index])
+            ftype=_cprintf.get(ftype,ftype)
+            length=self._flength[field.index]
+            if length is None:
+                out.append(f'  printf("    %-15s= {ftype}\\n","{name}",obj->{name}); ')
+            else:
+                for ii in range(length):
+                    out.append(f'  printf("    %-15s= {ftype}\\n","{name}[{ii}]",obj->{name}[{ii}]); ')
+        out.append("};")
+        return '\n'.join(out)
+
+    def _cdebug(self):
+        import cffi
+        ffi = cffi.FFI()
+        ffi.cdef(self._to_cdecl())
+        cls=self.__class__.__name__
+        ffi.cdef("void %s_print(%s *obj);"%(cls,cls))
+        lib = ffi.verify(self._to_cdebug())
+        cobj= ffi.cast(f"{cls} *",self._get_address())
+        getattr(lib,"%s_print"%cls)(cobj)
+        return ffi,lib,cobj
+
     @classmethod
     def get_fields(cls):
         for nn, vv in cls.__dict__.items():

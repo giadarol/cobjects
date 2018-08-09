@@ -36,5 +36,5 @@ print(data)
 c=CBuffer.from_file('test.np')
 obj0=c.get_object(MyObj,0)
 
-
+ffi,lib,cobj=obj1._cdebug()
 #c=CBuffer.from_file('test_buffer_common.bin')
