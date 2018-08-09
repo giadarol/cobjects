@@ -190,7 +190,6 @@ class CBuffer(object):
         old_garbage = self.garbage
         self.allocate(max_slots, max_objects, max_pointers, max_garbage)
         gap = self._data_i64[0]-old_data_i64[0]
-        print(gap)
         #copy old data
         self.slots[1:len(old_slots)] = old_slots[1:]
         self.objects[1:len(old_objects)] = old_objects[1:]
@@ -203,7 +202,6 @@ class CBuffer(object):
         self.pointers[2:self.n_pointers+2] += gap
         self.garbage[2:2*self.n_garbage:2] += gap
         for ptr in self.pointers[2:self.n_pointers+2]:
-            print(ptr,self.base,(ptr-self.base)//8)
             self._data_i64[(ptr-self.base)//8] +=gap
 
     def check_pointers(self):
@@ -359,7 +357,6 @@ class CBuffer(object):
         old_base = self._data_i64[0]
         self._data_i64[0]=self._data.ctypes.data
         gap = self._data_i64[0]-old_base
-        #print(old_base,self.base,gap)
         self._data_i64[3]+=gap
         self._data_i64[4]+=gap
         self._data_i64[5]+=gap

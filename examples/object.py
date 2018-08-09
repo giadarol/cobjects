@@ -33,8 +33,8 @@ b.to_file('test.np')
 import numpy as np
 data=np.fromfile('test.np',dtype='uint64')
 print(data)
-#c=CBuffer.from_file('test.np')
+c=CBuffer.from_file('test.np')
+obj0=c.get_object(MyObj,0)
 
 
 #c=CBuffer.from_file('test_buffer_common.bin')
-#obj0=c.get_object(MyObj,0)
