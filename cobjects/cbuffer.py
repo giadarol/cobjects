@@ -123,6 +123,7 @@ class CBuffer(object):
            self.allocate(max_slots, max_objects, max_pointers, max_garbage)
         else:
            self._data=data
+           self._data_i64 = self._data.view('int64')
 
     def resolve_type(self, ftype):
         return np.dtype(self.template.get(ftype, ftype))
@@ -178,7 +179,7 @@ class CBuffer(object):
         return self.size_garbage//8-2-self.n_garbage
 
     def reallocate(self, max_slots, max_objects, max_pointers, max_garbage):
-        old_data = self._data
+        old_data_i64 = self._data_i64
         old_slots = self.slots
         old_objects = self.objects
         old_n_slots = self.n_slots
@@ -188,20 +189,48 @@ class CBuffer(object):
         old_pointers = self.pointers
         old_garbage = self.garbage
         self.allocate(max_slots, max_objects, max_pointers, max_garbage)
-        gap = int(self._data[0])-int(old_data[0])
+        gap = self._data_i64[0]-old_data_i64[0]
+        print(gap)
+        #copy old data
         self.slots[1:len(old_slots)] = old_slots[1:]
         self.objects[1:len(old_objects)] = old_objects[1:]
-        p_array = self.objects[2:2+3*old_n_objects:3]
-        self.objects[2:2+3*old_n_objects:3] += gap
         self.pointers[1:len(old_pointers)] = old_pointers[1:]
         self.garbage[1:len(old_garbage)] = old_garbage[1:]
-        self.garbage[2:2*old_n_garbage:2] += gap
+        self.shift_data_pointers(gap)
+
+    def shift_data_pointers(self,gap):
+        self.objects[2:2+3*self.n_objects:3] += gap
+        self.pointers[2:self.n_pointers+2] += gap
+        self.garbage[2:2*self.n_garbage:2] += gap
+        for ptr in self.pointers[2:self.n_pointers+2]:
+            print(ptr,self.base,(ptr-self.base)//8)
+            self._data_i64[(ptr-self.base)//8] +=gap
+
+    def check_pointers(self):
+        base=self.base
+        def check(lbl,val):
+            print("%-15s %20d %20d"%(lbl,val-base,val))
+        check("base",self._data_i64[0])
+        check("slots",self._data_i64[3])
+        check("objects" ,self._data_i64[4])
+        check("pointers" ,self._data_i64[5])
+        check("garbage" ,self._data_i64[6])
+        for objid in range(self.n_objects):
+            check("obj(%d)"%objid,self.get_object_address(objid))
+        for ptrid in range(self.n_pointers):
+            ptr=self.pointers[2+ptrid]
+            check("ptr(%d)"%ptrid,ptr)
+            ptr_data=self._data_i64[(ptr-self.base)//8]
+            check("ptr_data(%d)"%ptrid,ptr_data)
 
     def next_object_address(self):
         return self.p_slots+(2+self.n_slots)*8
 
     def address_to_offset(self, address):
         return address - self.base
+
+    def offset_to_address(self, offset):
+        return self.base + offset
 
     def new_object(self, size, otype, pointer_list=[]):
         typeid = otype._typeid
@@ -234,7 +263,7 @@ class CBuffer(object):
         p_object = self.p_slots+(2+self.n_slots)*8
         self.n_slots += slots_needed
         for p_address in pointer_list:
-            self.pointers[2+self.n_pointers] = p_address + p_object
+            self.pointers[2+self.n_pointers] = p_object + p_address
             self.n_pointers += 1
         idx_object = 2+self.n_objects*3
         self.objects[idx_object+0] = p_object
@@ -250,10 +279,20 @@ class CBuffer(object):
         idx = p_object-self.base
         return self._data[idx:idx+size]
 
+    def get_object_address(self, objid):
+        idx = 2+objid*3
+        p_object = int(self.objects[idx])
+        return p_object
+
     def get_object_size(self, objid):
         idx = 2+objid*3
         size = int(self.objects[idx+2])
         return self._data[idx:idx+size]
+
+    def get_object(self,cls,objid):
+        idx=2+objid*3
+        ptr=self.objects[idx]
+        return cls(cbuffer=self,_offset=ptr-self.base)
 
     def get_field(self, offset, ftype, fsize, length=None):
         if length is None:
@@ -264,13 +303,14 @@ class CBuffer(object):
         else:
             if hasattr(ftype, '_typeid'):
                 return [ftype(cbuffer=self,
-                              _offset=offset+ii*size,
-                              _size=size)
+                              _offset=offset+ii*size)
                         for ii in range(len(ii))]
             else:
                 return self._data[offset:offset+fsize].view(ftype)
 
-    def set_field(self, value, offset, ftype, fsize, length=None):
+    def set_field(self, offset, ftype, fsize, length, value):
+        """offset: offset from beginning of buffer in bytes
+        """
         data = self._data[offset:offset+fsize].view(ftype)
         if length is None:
             data[0] = value
@@ -311,28 +351,20 @@ class CBuffer(object):
     def to_file(self, filename):
         self._data.tofile(filename)
 
+
     @classmethod
     def from_file(cls, filename):
         data=np.fromfile(filename,dtype='uint8')
         self=cls(data=data)
-        old_data = self._data
-        old_slots = self.slots
-        old_objects = self.objects
-        old_n_slots = self.n_slots
-        old_n_objects = self.n_objects
-        old_n_pointers = self.n_pointers
-        old_n_garbage = self.n_garbage
-        old_pointers = self.pointers
-        old_garbage = self.garbage
-        self_data[0]=self._data.ctypes.data
-        gap = self_data[0]-old_data[0]
-        self.slots[1:len(old_slots)] = old_slots[1:]
-        self.objects[1:len(old_objects)] = old_objects[1:]
-        p_array = self.objects[2:2+3*old_n_objects:3]
-        self.objects[2:2+3*old_n_objects:3] += gap
-        self.pointers[1:len(old_pointers)] = old_pointers[1:]
-        self.garbage[1:len(old_garbage)] = old_garbage[1:]
-        self.garbage[2:2*old_n_garbage:2] += gap
+        old_base = self._data_i64[0]
+        self._data_i64[0]=self._data.ctypes.data
+        gap = self._data_i64[0]-old_base
+        #print(old_base,self.base,gap)
+        self._data_i64[3]+=gap
+        self._data_i64[4]+=gap
+        self._data_i64[5]+=gap
+        self._data_i64[6]+=gap
+        self.shift_data_pointers(gap)
         return self
 
 CBuffer.c_types = c_types

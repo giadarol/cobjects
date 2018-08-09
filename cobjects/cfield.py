@@ -40,7 +40,7 @@ class CField(object):
              ftype=obj._ftypes[self.index]
              fsize=obj._fsizes[self.index]
              length=obj._flength[self.index]
-             obj._buffer.set_field(value,offset,ftype,fsize,length)
+             obj._buffer.set_field(offset,ftype,fsize,length,value)
              if self.setter is not None:
                  self.setter(obj,value)
     def __get__(self,obj,cls=None):

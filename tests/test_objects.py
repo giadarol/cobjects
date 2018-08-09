@@ -22,6 +22,7 @@ def test_flat_object():
     assert(obj.e[0]==3)
     assert(obj.e[1]==4)
     assert(obj.e[1]==4)
+    return obj
 
 
 

@@ -13,6 +13,19 @@ class CObject(object):
     def get_itemsize(cls, offset, nargs):
         return cls(offset,**nargs)._size
 
+    def _check_pointers(self):
+        pfields=[ (name, field) for name, field in self._fields() if field.pointer is True]
+        for offset,(name, field) in zip(self._pointer_list,pfields):
+            pointer_offset= self._offset + offset
+            data_offset=self._offsets[field.index]
+            data_address=self._buffer.get_field(pointer_offset,'int64',64,None)
+            print(f"field {name}: obj={self._offset} *={data_offset} off={data_offset-self._offset}")
+            object_address=self._get_address()
+            print(f"   obj={object_address} *={data_address} off={data_address-object_address}")
+
+    def _get_address(self):
+        return self._buffer.offset_to_address(self._offset)
+
     def _fields(self):
         return self.__class__.get_fields()
 
@@ -26,6 +39,7 @@ class CObject(object):
             copy_args  = True
         else:
             new_object = False
+            copy_args  = False
         self._setup_from_args(nargs, _offset, new_object, copy_args)
 
     def _setup_from_args(self, nargs, offset, new_object, copy_args):
@@ -42,7 +56,8 @@ class CObject(object):
             curr_offset = offset
             self._offset = offset
         curr_pointers = 0
-        pointer_list = []
+        pointer_list = [] #offset from beginning of the object to pointer
+        pointer_data = [] #offset from beginning of the object to pointing data
         # first pass for normal fields
         for name, field in self._fields():
             ftype = self._buffer.resolve_type(field.ftype)
@@ -71,8 +86,8 @@ class CObject(object):
             if new_object is False:
                 if field.const is True:
                     nargs[name] = getattr(self, name)
+        self._pointer_list=pointer_list 
         # second pass for pointer fields
-        pointer_data = []
         for name, field in self._fields():
             if field.pointer is True:
                 if field.alignment is not None:
@@ -98,8 +113,8 @@ class CObject(object):
         if copy_args is True:
             # store pointer data
             for offset, address in pointer_data:
-                doffset = offset+self._offset
-                self._buffer.set_field(_address+address, doffset, 'int64', 8)
+                doffset = offset+self._offset #location from buffer
+                self._buffer.set_field(doffset, 'int64', 8, None, _address+address)
             # store data in fields
             for name, field in self._fields():
                 setattr(self, name, nargs.get(name, field.default))
