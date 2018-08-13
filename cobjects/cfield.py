@@ -2,7 +2,7 @@ class CField(object):
     def __init__(self, index,
              ftype,default=None, const=False,
              length=None, pointer=False,
-             alignment=None,
+             alignment=8,
              setter=None):
         self.index = index
         self.ftype = ftype

@@ -91,7 +91,7 @@ c_types = {'integer': 'int64',
 
 
 class CBuffer(object):
-    HEADER = 64
+    HEADER = 112
     base = fieldi64(0)
     size = fieldi64(1*8)
     size_header = fieldi64(2*8)
