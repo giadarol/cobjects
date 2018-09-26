@@ -126,7 +126,7 @@ class CBuffer(object):
            self._data_i64 = self._data.view('int64')
 
     def resolve_type(self, ftype):
-        return np.dtype(self.template.get(ftype, ftype))
+        return self.template.get(ftype, ftype)
 
     @property
     def max_slots(self):

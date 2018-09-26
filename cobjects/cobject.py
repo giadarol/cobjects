@@ -1,6 +1,8 @@
 from .cbuffer import CBuffer
 from .cfield import CField
 
+import numpy as np
+
 _ctypes={'int64': 'long',
          'int32': 'int',
          'uint8': 'unsigned char',
@@ -13,9 +15,18 @@ _cprintf={'int64': '%ld',
 
 class CObject(object):
     def _to_cdecl(self,restrict=True, aligned=False):
-        out=["typedef struct {"]
+        out=[]
+        for  name, self._fnames in self._fields():
+            field=getattr(self,name)
+            if hasattr(field,'_to_cdecl'):
+                out.append(field._to_cdecl())
+        out.append("typedef struct {")
         for  name, field in self._fields():
-            ftype=str(self._ftypes[field.index])
+            ftype=(self._ftypes[field.index])
+            if hasattr(ftype,'_to_cdecl'):
+                ftype=ftype.__name__
+            else:
+                ftype=str(self._ftypes[field.index])
             ftype=_ctypes.get(ftype,ftype)
             length=self._flength[field.index]
             if field.pointer:
@@ -66,8 +77,8 @@ class CObject(object):
                 yield nn, vv
 
     @classmethod
-    def get_itemsize(cls, offset, nargs):
-        return cls(offset,**nargs)._size
+    def get_itemsize(cls, nargs):
+        return cls(**nargs)._size
 
     def _check_pointers(self):
         pfields=[ (name, field) for name, field in self._fields() if field.pointer is True]
@@ -117,6 +128,8 @@ class CObject(object):
         # first pass for normal fields
         for name, field in self._fields():
             ftype = self._buffer.resolve_type(field.ftype)
+            if not (type(ftype) is type and issubclass(ftype,CObject)):
+                ftype = np.dtype(ftype)
             length = field.get_length(nargs)
             self._flength.append(length)
             size = field.get_size(ftype, curr_offset, nargs)
@@ -142,7 +155,7 @@ class CObject(object):
             if new_object is False:
                 if field.const is True:
                     nargs[name] = getattr(self, name)
-        self._pointer_list=pointer_list 
+        self._pointer_list=pointer_list
         # second pass for pointer fields
         for name, field in self._fields():
             if field.pointer is True:
@@ -173,7 +186,8 @@ class CObject(object):
                 self._buffer.set_field(doffset, 'int64', 8, None, _address+address)
             # store data in fields
             for name, field in self._fields():
-                setattr(self, name, nargs.get(name, field.default))
+                if field.is_scalar():
+                   setattr(self, name, nargs.get(name, field.default))
                 if field.const is True:
                     self._const[field.index] = True
 
