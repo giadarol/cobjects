@@ -12,7 +12,7 @@ _cprintf={'int64': '%ld',
          'float64': '%g'}
 
 class CObject(object):
-    def _to_cdecl(self,restrict=True):
+    def _to_cdecl(self,restrict=True, aligned=False):
         out=["typedef struct {"]
         for  name, field in self._fields():
             ftype=str(self._ftypes[field.index])
@@ -24,14 +24,14 @@ class CObject(object):
                 name='*'+name
             elif length is not None:
                 name=f"{name}[{length}]"
-            if field.alignment is not None:
-                name=f"     {name} __attribute__ ((aligned ({field.alignment})))"
+            if field.alignment is not None and aligned is True:
+                name=f"     {name} __attribute__((aligned ({field.alignment})))"
             out.append(f'{str(ftype):10} {name} ;')
         out.append("} %s;"%self.__class__.__name__ )
         return '\n'.join(out)
 
     def _to_cdebug(self,restrict=True):
-        out=[self._to_cdecl(restrict=restrict)]
+        out=[self._to_cdecl(restrict=restrict,aligned=True)]
         cls=self.__class__.__name__
         out.append("#include <stdio.h>")
         out.append("void %s_print(%s *obj){"%(cls,cls))
@@ -51,7 +51,7 @@ class CObject(object):
     def _cdebug(self):
         import cffi
         ffi = cffi.FFI()
-        ffi.cdef(self._to_cdecl())
+        ffi.cdef(self._to_cdecl(restrict=False,aligned=False))
         cls=self.__class__.__name__
         ffi.cdef("void %s_print(%s *obj);"%(cls,cls))
         lib = ffi.verify(self._to_cdebug())
