@@ -189,7 +189,7 @@ class CObject(object):
                 if field.is_scalar():
                    setattr(self, name, nargs.get(name, field.default))
                 if field.const is True:
-                    self._const[field.index] = True
+                    self._fconst[field.index] = True
 
     def __repr__(self):
         out = [f"<{self.__class__.__name__} at {self._offset}"]
