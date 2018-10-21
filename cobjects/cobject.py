@@ -93,6 +93,9 @@ class CObject(object):
     def _get_address(self):
         return self._buffer.offset_to_address(self._offset)
 
+    def _get_buffer(self):
+        return self._buffer._data[self._offset:self._offset+self._size]
+
     def _fields(self):
         return self.__class__.get_fields()
 
