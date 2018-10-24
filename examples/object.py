@@ -29,11 +29,11 @@ obj2.e=[3,4]
 print(obj1)
 print(obj2)
 
-b.to_file('test.np')
+b.tofile('test.np')
 import numpy as np
 data=np.fromfile('test.np',dtype='uint64')
 print(data)
-c=CBuffer.from_file('test.np')
+c=CBuffer.fromfile('test.np')
 obj0=c.get_object(MyObj,0)
 
 ffi,lib,cobj=obj1._cdebug()

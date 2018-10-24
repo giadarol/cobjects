@@ -357,12 +357,12 @@ class CBuffer(object):
     def _test_cffilib(self):
         return lib.print_info(self._cffi_pointer)
 
-    def to_file(self, filename):
+    def tofile(self, filename):
         self._data.tofile(filename)
 
 
     @classmethod
-    def from_file(cls, filename):
+    def fromfile(cls, filename):
         data=np.fromfile(filename,dtype='uint8')
         self=cls(data=data)
         old_base = self._data_i64[0]
