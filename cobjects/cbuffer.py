@@ -277,19 +277,30 @@ class CBuffer(object):
         idx = p_object-self.base
         return self._data[idx:idx+size]
 
+    def get_object_slots(self, objid):
+        return get_object_buffer(objid).view('int64')
+
     def get_object_address(self, objid):
         idx = 2+objid*3
         p_object = int(self.objects[idx])
         return p_object
 
+    def get_object_typeid(self, objid):
+        idx = 2+objid*3
+        typeid = int(self.objects[idx+1])
+        return typeid
+
     def get_object_size(self, objid):
         idx = 2+objid*3
         size = int(self.objects[idx+2])
-        return self._data[idx:idx+size]
+        return size
 
-    def get_object(self,cls,objid):
+    def get_object(self,objid,cls=None):
         idx=2+objid*3
         ptr=self.objects[idx]
+        typeid=self.objects[idx+1]
+        if typeid in self.typeids and cls is None:
+            cls=self.typeids[typeid]
         return cls(cbuffer=self,_offset=ptr-self.base)
 
     def get_field(self, offset, ftype, fsize, length=None):
