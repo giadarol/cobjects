@@ -20,21 +20,5 @@ obj.d=2
 obj.e=[3,4]
 print(obj)
 
-b=CBuffer()
-obj1=MyObj(cbuffer=b)
-b.check_pointers()
-obj2=MyObj(cbuffer=b)
-b.check_pointers()
-obj2.e=[3,4]
-print(obj1)
-print(obj2)
-
-b.tofile('test.np')
-import numpy as np
-data=np.fromfile('test.np',dtype='uint64')
-print(data)
-c=CBuffer.fromfile('test.np')
-obj0=c.get_object(MyObj,0)
-
-ffi,lib,cobj=obj1._cdebug()
-#c=CBuffer.from_file('test_buffer_common.bin')
+print(obj._to_cdebug())
+ffi,lib,cobj=obj._cdebug()

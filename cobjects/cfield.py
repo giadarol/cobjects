@@ -12,6 +12,8 @@ class CField(object):
         self.const=const
         self.pointer=pointer
         self.alignment=alignment
+    def is_scalar(self):
+        return isinstance(self.ftype,str)
     def get_length(self,nargs):
         if self.length is not None:
             length=self.length
@@ -20,7 +22,7 @@ class CField(object):
             return length
     def get_size(self,ftype,offset,nargs):
         if hasattr(ftype,'get_itemsize'):
-            size=ftype.get_itemsize(offset,nargs)
+            size=ftype.get_itemsize(nargs)
         else:
             size=ftype.itemsize
         length=self.get_length(nargs)
@@ -42,7 +44,7 @@ class CField(object):
              length=obj._flength[self.index]
              obj._buffer.set_field(offset,ftype,fsize,length,value)
              if self.setter is not None:
-                 self.setter(obj,value)
+                 self.setter(obj)
     def __get__(self,obj,cls=None):
         if obj is None:
             return self
