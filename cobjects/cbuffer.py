@@ -304,7 +304,7 @@ class CBuffer(object):
         return cls(cbuffer=self,_offset=ptr-self.base)
 
     def get_objects(self):
-        return [self.get_object(i) for i in range(cbuffer.n_objects)]
+        return [self.get_object(i) for i in range(self.n_objects)]
 
     def get_field(self, offset, ftype, fsize, length=None):
         if length is None:
