@@ -303,6 +303,9 @@ class CBuffer(object):
             cls=self.typeids[typeid]
         return cls(cbuffer=self,_offset=ptr-self.base)
 
+    def get_objects(self):
+        return [self.get_object(i) for i in range(self.n_objects)]
+
     def get_field(self, offset, ftype, fsize, length=None):
         if length is None:
             if hasattr(ftype, '_typeid'):
