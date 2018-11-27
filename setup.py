@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
         name='cobjects',
-        version='0.0.3',
+        version='0.0.4',
         description='Manage C data from Python for C libraries',
         author='Riccardo De Maria',
         author_email='riccardo.de.maria@cern.ch',
