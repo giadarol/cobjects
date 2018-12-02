@@ -52,4 +52,6 @@ class CField(object):
             return self._field_getter(obj)
     def __set__(self,obj,value):
         return self._field_setter(obj,value)
+    def __repr__(self):
+        return str((self.index,self.ftype,self.length))
 
