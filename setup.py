@@ -1,7 +1,5 @@
 from setuptools import setup
 
-
-
 setup(
         name='cobjects',
         version='0.0.4',
