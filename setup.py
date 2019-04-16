@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
         name='cobjects',
-        version='0.0.5',
+        version='0.0.6',
         description='Manage C data from Python for C libraries',
         author='Riccardo De Maria',
         author_email='riccardo.de.maria@cern.ch',
