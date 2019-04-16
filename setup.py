@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
         name='cobjects',
-        version='0.0.7',
+        version='0.0.8',
         description='Manage C data from Python for C libraries',
         author='Riccardo De Maria',
         author_email='riccardo.de.maria@cern.ch',
@@ -10,9 +10,9 @@ setup(
         python_requires='>=3.6',
         packages=['cobjects'],
         package_dir={'cobjects': 'cobjects'},
-        cffi_modules=["cobjects/_cffi_build/cbuffer_builder.py:ffibuilder"],
+        cffi_modules=["cobjects/cbuffer_builder.py:ffibuilder"],
         install_requires=['numpy','cffi>=1.0.0'],
-        setup_requires=['cffi>=1.0.0']
+        setup_requires=['cffi>=1.0.0'],
 )
 
 
