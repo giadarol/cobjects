@@ -12,7 +12,7 @@ ffibuilder.set_source("cobjects._cbuffer",
     #include "cbuffer.h"
     """,
     include_dirs=['src/'],
-    sources=['src/cbuffer.c','src/cbuffer.h'],
+    sources=['src/cbuffer.c'],
     libraries=[])   # or a list of libraries to link with
 
 ffibuilder.cdef("""
