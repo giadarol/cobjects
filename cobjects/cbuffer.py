@@ -315,8 +315,8 @@ class CBuffer(object):
         else:
             if hasattr(ftype, '_typeid'):
                 return [ftype(cbuffer=self,
-                              _offset=offset+ii*size)
-                        for ii in range(len(ii))]
+                              _offset=offset+ii*fsize//length)
+                        for ii in range(length)]
             else:
                 return self._data[offset:offset+fsize].view(ftype)
 
