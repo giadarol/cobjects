@@ -135,7 +135,7 @@ class CObject(object):
                 ftype = np.dtype(ftype)
             length = field.get_length(nargs)
             self._flength.append(length)
-            size = field.get_size(ftype, curr_offset, nargs)
+            size = int(field.get_size(ftype, curr_offset, nargs))
             self._fconst.append(False)
             self._fnames.append(name)
             self._ftypes.append(ftype)
